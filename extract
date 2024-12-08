@@ -1,34 +1,49 @@
 function extractResults(text) {
   const results = [];
+  
+  // Dicionário de referências para exames (exemplo; expanda conforme necessário)
+  const referenceRanges = {
+    hemoglobina: { min: 13.0, max: 18.0, unit: "g/dL" },
+    hematocrito: { min: 39, max: 53, unit: "%" },
+    vcm: { min: 80, max: 98, unit: "fL" },
+    ur: { min: 0, max: 1, unit: "mg/dL" },
+    cr: { min: 0.7, max: 1.2, unit: "mg/dL" },
+    "reagente": ["Não Reagente", "Reagente"], // Para exames qualitativos
+  };
 
-  // Expressões regulares para capturar diferentes exames e valores de referência
+  // Função para verificar se o resultado está fora do intervalo
+  function checkReference(value, range) {
+    if (!range || typeof value !== "number") return false;
+    return value < range.min || value > range.max;
+  }
+
+  // Função para destacar resultados alterados em vermelho e negrito
+  function highlightIfOutOfRange(value, range) {
+    if (checkReference(value, range)) {
+      return `<span style="color: red; font-weight: bold;">${value}</span>`;
+    }
+    return value;
+  }
+
+  // Regex para capturar os exames e valores
   const patterns = [
-    { name: "Hemoglobina", regex: /HEMOGLOBINA..:\s*([\d.,]+)\s*g\/dL.*?(\d+\.\d+)\s*a\s*(\d+\.\d+)\s*g\/dL/i },
-    { name: "Hematócrito", regex: /HEMATOCRITO..:\s*([\d.,]+)\s*%.*?(\d+)\s*a\s*(\d+)\s*%/i },
-    { name: "VCM", regex: /VCM..........:\s*([\d.,]+)\s*fL.*?(\d+)\s*a\s*(\d+)\s*fL/i },
-    { name: "Ureia", regex: /UREIA..:\s*([\d.,]+)\s*mg\/dL.*?(\d+)\s*a\s*(\d+)\s*mg\/dL/i },
-    { name: "Creatinina", regex: /CREATININA..:\s*([\d.,]+)\s*mg\/dL.*?(\d+)\s*a\s*(\d+)\s*mg\/dL/i },
-    { name: "Reagente/Não reagente", regex: /(RESULTADO..:\s*(Reagente|Não reagente))/i }
+    { name: "Hemoglobina", regex: /HEMOGLOBINA..:\s*([\d.,]+)\s*g\/dL/i, key: "hemoglobina" },
+    { name: "Hematócrito", regex: /HEMATOCRITO..:\s*([\d.,]+)\s*%/i, key: "hematocrito" },
+    { name: "VCM", regex: /VCM..........:\s*([\d.,]+)\s*fL/i, key: "vcm" },
+    { name: "Ur", regex: /UR..:\s*([\d.,]+)/i, key: "ur" },
+    { name: "Cr", regex: /CR..:\s*([\d.,]+)/i, key: "cr" },
+    { name: "Reagente", regex: /(Reagente|Não Reagente)/i, key: "reagente" },
   ];
 
-  // Percorre cada padrão para verificar e formatar os resultados
-  patterns.forEach(({ name, regex }) => {
+  // Processar cada padrão
+  patterns.forEach(({ name, regex, key }) => {
     const match = regex.exec(text);
     if (match) {
-      const value = parseFloat(match[1].replace(",", ".")); // Valor do exame
-      const lower = parseFloat(match[2]); // Limite inferior da referência
-      const upper = parseFloat(match[3]); // Limite superior da referência
-
-      if (name === "Reagente/Não reagente") {
-        // Exibe como Reagente ou Não reagente
-        results.push(`${name}: ${match[2]}`);
-      } else if (value < lower || value > upper) {
-        // Resultado alterado (fora do intervalo de referência)
-        results.push(`<span style="color: red; font-weight: bold;">${name} ${value}</span>`);
-      } else {
-        // Resultado dentro do intervalo de referência
-        results.push(`${name} ${value}`);
-      }
+      const value = match[1];
+      const numValue = parseFloat(value.replace(",", "."));
+      const range = referenceRanges[key];
+      const formattedValue = range ? highlightIfOutOfRange(numValue, range) : value;
+      results.push(`${name} ${formattedValue}`);
     }
   });
 
