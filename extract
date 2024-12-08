@@ -1,23 +1,29 @@
 function extractResults(text) {
   const results = [];
   
-  // Dicionário de referências para exames (exemplo; expanda conforme necessário)
+  // Etapa 1: Limpar o texto
+  text = text
+    .replace(/\s+/g, " ") // Substituir múltiplos espaços por um único espaço
+    .replace(/\.\.+/g, ".") // Substituir múltiplos pontos por um único ponto
+    .replace(/Valores De Referência:/gi, "Referência:"); // Uniformizar o texto
+
+  // Dicionário de referências para exames
   const referenceRanges = {
     hemoglobina: { min: 13.0, max: 18.0, unit: "g/dL" },
     hematocrito: { min: 39, max: 53, unit: "%" },
     vcm: { min: 80, max: 98, unit: "fL" },
     ur: { min: 0, max: 1, unit: "mg/dL" },
     cr: { min: 0.7, max: 1.2, unit: "mg/dL" },
-    "reagente": ["Não Reagente", "Reagente"], // Para exames qualitativos
+    reagente: ["Não Reagente", "Reagente"], // Para exames qualitativos
   };
 
-  // Função para verificar se o resultado está fora do intervalo
+  // Etapa 2: Verificar se o resultado está fora do intervalo
   function checkReference(value, range) {
     if (!range || typeof value !== "number") return false;
     return value < range.min || value > range.max;
   }
 
-  // Função para destacar resultados alterados em vermelho e negrito
+  // Etapa 3: Destacar resultados alterados em vermelho e negrito
   function highlightIfOutOfRange(value, range) {
     if (checkReference(value, range)) {
       return `<span style="color: red; font-weight: bold;">${value}</span>`;
@@ -25,7 +31,7 @@ function extractResults(text) {
     return value;
   }
 
-  // Regex para capturar os exames e valores
+  // Etapa 4: Regex para capturar os exames e valores
   const patterns = [
     { name: "Hemoglobina", regex: /HEMOGLOBINA..:\s*([\d.,]+)\s*g\/dL/i, key: "hemoglobina" },
     { name: "Hematócrito", regex: /HEMATOCRITO..:\s*([\d.,]+)\s*%/i, key: "hematocrito" },
@@ -35,7 +41,7 @@ function extractResults(text) {
     { name: "Reagente", regex: /(Reagente|Não Reagente)/i, key: "reagente" },
   ];
 
-  // Processar cada padrão
+  // Etapa 5: Processar cada padrão
   patterns.forEach(({ name, regex, key }) => {
     const match = regex.exec(text);
     if (match) {
@@ -47,5 +53,6 @@ function extractResults(text) {
     }
   });
 
+  // Etapa 6: Retornar os resultados
   return results.length > 0 ? results.join(" | ") : "Nenhum dado relevante encontrado.";
 }
