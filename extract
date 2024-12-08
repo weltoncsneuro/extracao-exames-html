@@ -1,0 +1,36 @@
+function extractResults(text) {
+  const results = [];
+
+  // Expressões regulares para capturar diferentes exames e valores de referência
+  const patterns = [
+    { name: "Hemoglobina", regex: /HEMOGLOBINA..:\s*([\d.,]+)\s*g\/dL.*?(\d+\.\d+)\s*a\s*(\d+\.\d+)\s*g\/dL/i },
+    { name: "Hematócrito", regex: /HEMATOCRITO..:\s*([\d.,]+)\s*%.*?(\d+)\s*a\s*(\d+)\s*%/i },
+    { name: "VCM", regex: /VCM..........:\s*([\d.,]+)\s*fL.*?(\d+)\s*a\s*(\d+)\s*fL/i },
+    { name: "Ureia", regex: /UREIA..:\s*([\d.,]+)\s*mg\/dL.*?(\d+)\s*a\s*(\d+)\s*mg\/dL/i },
+    { name: "Creatinina", regex: /CREATININA..:\s*([\d.,]+)\s*mg\/dL.*?(\d+)\s*a\s*(\d+)\s*mg\/dL/i },
+    { name: "Reagente/Não reagente", regex: /(RESULTADO..:\s*(Reagente|Não reagente))/i }
+  ];
+
+  // Percorre cada padrão para verificar e formatar os resultados
+  patterns.forEach(({ name, regex }) => {
+    const match = regex.exec(text);
+    if (match) {
+      const value = parseFloat(match[1].replace(",", ".")); // Valor do exame
+      const lower = parseFloat(match[2]); // Limite inferior da referência
+      const upper = parseFloat(match[3]); // Limite superior da referência
+
+      if (name === "Reagente/Não reagente") {
+        // Exibe como Reagente ou Não reagente
+        results.push(`${name}: ${match[2]}`);
+      } else if (value < lower || value > upper) {
+        // Resultado alterado (fora do intervalo de referência)
+        results.push(`<span style="color: red; font-weight: bold;">${name} ${value}</span>`);
+      } else {
+        // Resultado dentro do intervalo de referência
+        results.push(`${name} ${value}`);
+      }
+    }
+  });
+
+  return results.length > 0 ? results.join(" | ") : "Nenhum dado relevante encontrado.";
+}
